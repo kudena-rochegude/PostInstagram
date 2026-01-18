@@ -23,13 +23,12 @@ MVP de publication Instagram automatisée pour clients industriels.
 
 ```
 .
-├── webapp/                 # Front-end PWA
-│   ├── index.html
-│   ├── styles.css
-│   ├── app.js
-│   ├── manifest.json
-│   ├── sw.js
-│   └── icons/             # Icônes PWA (à créer)
+├── index.html              # Page principale PWA
+├── styles.css              # Styles CSS
+├── app.js                  # Logique JavaScript
+├── manifest.json           # Config PWA
+├── sw.js                   # Service Worker
+├── icons/                  # Icônes PWA (à créer)
 ├── n8n/
 │   └── workflow-insta-post.json   # Workflow à importer
 ├── docs/
@@ -54,10 +53,10 @@ git remote add origin https://github.com/VOTRE-PSEUDO/industrial-insta-post.git
 git push -u origin main
 
 # Activer GitHub Pages
-# Settings → Pages → Source: Deploy from branch → main → /webapp
+# Settings → Pages → Source: Deploy from branch → main → / (root)
 ```
 
-URL finale : `https://VOTRE-PSEUDO.github.io/industrial-insta-post/`
+URL finale : `https://kudena-rochegude.github.io/PostInstagram/`
 
 ### 2. Workflow n8n
 
@@ -70,7 +69,7 @@ URL finale : `https://VOTRE-PSEUDO.github.io/industrial-insta-post/`
 
 ### 3. Configuration de l'app
 
-Éditer `webapp/app.js` :
+Éditer `app.js` :
 
 ```javascript
 const CONFIG = {
