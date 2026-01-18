@@ -1,0 +1,518 @@
+{
+  "name": "Industrial Insta-Post",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "insta-post",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "webhook-receiver",
+      "name": "Webhook Receiver",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "insta-post"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "action-analyze",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "analyze",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "switch-action",
+      "name": "Switch Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.7
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Tu es un expert en marketing industriel B2B. Analyse cette image d'équipement ou de réalisation industrielle et génère une légende Instagram captivante.\n\nRègles :\n1. La légende doit être en français\n2. Maximum 200 caractères pour le texte principal\n3. Ton professionnel mais accessible\n4. Mets en valeur l'expertise technique et le savoir-faire\n5. Ajoute 5-8 hashtags pertinents pour l'industrie française\n6. Inclus un appel à l'action subtil\n\nFormat de réponse (JSON) :\n{\n  \"caption\": \"[Texte principal + hashtags]\"\n}",
+              "role": "system"
+            },
+            {
+              "content": {
+                "type": "image",
+                "image": "={{ $json.body.image }}"
+              },
+              "role": "user"
+            }
+          ]
+        }
+      },
+      "id": "openai-analyze",
+      "name": "OpenAI - Analyze Image",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [680, 180],
+      "credentials": {
+        "openAiApi": {
+          "id": "VOTRE_CREDENTIAL_ID",
+          "name": "OpenAI Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parser la réponse OpenAI et extraire la légende\nconst response = $input.first().json;\n\nlet caption = '';\n\ntry {\n  // Essayer de parser comme JSON\n  const parsed = JSON.parse(response.text || response.message?.content || '');\n  caption = parsed.caption || '';\n} catch (e) {\n  // Si pas JSON, utiliser le texte brut\n  caption = response.text || response.message?.content || 'Légende non générée';\n}\n\nreturn [{\n  json: {\n    caption: caption,\n    success: true\n  }\n}];"
+      },
+      "id": "parse-caption",
+      "name": "Parse Caption",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-caption",
+      "name": "Respond with Caption",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "action-publish",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "publish",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-publish",
+      "name": "Check Publish",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{ $json.body.instagramAccountId }}/media",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.body.imageUrl }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.body.caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $json.body.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ig-create-container",
+      "name": "IG - Create Media Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 340]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "wait-processing",
+      "name": "Wait for Processing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1120, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{ $('Webhook Receiver').item.json.body.instagramAccountId }}/media_publish",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $('Webhook Receiver').item.json.body.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ig-publish",
+      "name": "IG - Publish Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 340]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"postId\": \"{{ $json.id }}\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1560, 340]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error?.message || 'Unknown error' }}\"\n}",
+        "options": {
+          "responseCode": "400",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-error",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 520]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "action-regenerate",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "regenerate",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-regenerate",
+      "name": "Check Regenerate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 580]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.9
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Tu es un expert en marketing industriel B2B. Génère une NOUVELLE légende Instagram pour cette image, DIFFÉRENTE de la précédente.\n\nLégende précédente à éviter : {{ $json.body.previousCaption }}\n\nRègles :\n1. Légende en français, DIFFÉRENTE de la précédente\n2. Maximum 200 caractères pour le texte principal\n3. Ton professionnel mais accessible\n4. Mets en valeur l'expertise technique\n5. 5-8 hashtags pertinents (différents si possible)\n6. Appel à l'action subtil\n\nFormat JSON :\n{\n  \"caption\": \"[Nouveau texte + hashtags]\"\n}",
+              "role": "system"
+            },
+            {
+              "content": {
+                "type": "image",
+                "image": "={{ $json.body.image }}"
+              },
+              "role": "user"
+            }
+          ]
+        }
+      },
+      "id": "openai-regenerate",
+      "name": "OpenAI - Regenerate",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [900, 580],
+      "credentials": {
+        "openAiApi": {
+          "id": "VOTRE_CREDENTIAL_ID",
+          "name": "OpenAI Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nlet caption = '';\n\ntry {\n  const parsed = JSON.parse(response.text || response.message?.content || '');\n  caption = parsed.caption || '';\n} catch (e) {\n  caption = response.text || response.message?.content || 'Légende non générée';\n}\n\nreturn [{\n  json: {\n    caption: caption,\n    success: true\n  }\n}];"
+      },
+      "id": "parse-regenerated",
+      "name": "Parse Regenerated",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 580]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-regenerated",
+      "name": "Respond Regenerated",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 580]
+    }
+  ],
+  "connections": {
+    "Webhook Receiver": {
+      "main": [
+        [
+          {
+            "node": "Switch Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Action": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Analyze Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Publish",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Regenerate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Analyze Image": {
+      "main": [
+        [
+          {
+            "node": "Parse Caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Caption": {
+      "main": [
+        [
+          {
+            "node": "Respond with Caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Publish": {
+      "main": [
+        [
+          {
+            "node": "IG - Create Media Container",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IG - Create Media Container": {
+      "main": [
+        [
+          {
+            "node": "Wait for Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Processing": {
+      "main": [
+        [
+          {
+            "node": "IG - Publish Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IG - Publish Media": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Regenerate": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Regenerate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Regenerate": {
+      "main": [
+        [
+          {
+            "node": "Parse Regenerated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Regenerated": {
+      "main": [
+        [
+          {
+            "node": "Respond Regenerated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "instanceId": "industrial-insta-post-mvp"
+  },
+  "tags": [
+    {
+      "name": "Instagram",
+      "id": "1"
+    },
+    {
+      "name": "OpenAI",
+      "id": "2"
+    }
+  ]
+}

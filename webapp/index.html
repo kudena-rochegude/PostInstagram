@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="Industrial Insta-Post - Publication Instagram automatisée pour l'industrie">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <title>Industrial Insta-Post</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>🏭 Insta-Post</h1>
+            <p class="subtitle">Publication industrielle automatisée</p>
+        </header>
+
+        <!-- État de connexion -->
+        <div id="auth-section" class="section">
+            <button id="btn-login" class="btn btn-primary btn-full">
+                <span class="icon">📱</span>
+                Connexion Facebook
+            </button>
+            <p id="user-info" class="user-info hidden"></p>
+        </div>
+
+        <!-- Section Capture -->
+        <div id="capture-section" class="section hidden">
+            <div class="camera-container">
+                <video id="camera-preview" autoplay playsinline></video>
+                <canvas id="photo-canvas" class="hidden"></canvas>
+            </div>
+
+            <div class="capture-controls">
+                <button id="btn-capture" class="btn btn-capture">
+                    <span class="capture-icon">📸</span>
+                </button>
+                <button id="btn-switch-camera" class="btn btn-secondary btn-small">
+                    🔄 Caméra
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Preview -->
+        <div id="preview-section" class="section hidden">
+            <div class="preview-container">
+                <img id="photo-preview" alt="Photo capturée">
+            </div>
+
+            <div class="preview-actions">
+                <button id="btn-retake" class="btn btn-secondary">
+                    ↩️ Reprendre
+                </button>
+                <button id="btn-analyze" class="btn btn-primary">
+                    🤖 Analyser avec IA
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Analyse -->
+        <div id="analysis-section" class="section hidden">
+            <div class="loader-container">
+                <div class="loader"></div>
+                <p class="loader-text">Analyse en cours...</p>
+                <p class="loader-subtext">GPT-4o Vision examine votre image</p>
+            </div>
+        </div>
+
+        <!-- Section Résultat -->
+        <div id="result-section" class="section hidden">
+            <div class="result-preview">
+                <img id="result-image" alt="Image à publier">
+            </div>
+
+            <div class="caption-container">
+                <label for="caption-text">Légende générée :</label>
+                <textarea id="caption-text" rows="6" placeholder="Légende générée par l'IA..."></textarea>
+
+                <div class="caption-actions">
+                    <button id="btn-copy" class="btn btn-secondary btn-small">
+                        📋 Copier
+                    </button>
+                    <button id="btn-regenerate" class="btn btn-secondary btn-small">
+                        🔄 Régénérer
+                    </button>
+                </div>
+            </div>
+
+            <div class="publish-actions">
+                <button id="btn-publish" class="btn btn-success btn-full">
+                    📤 Publier sur Instagram
+                </button>
+                <button id="btn-share" class="btn btn-secondary btn-full">
+                    📱 Partager (compte perso)
+                </button>
+                <button id="btn-new" class="btn btn-outline btn-full">
+                    ➕ Nouvelle photo
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Succès -->
+        <div id="success-section" class="section hidden">
+            <div class="success-container">
+                <div class="success-icon">✅</div>
+                <h2>Publication réussie !</h2>
+                <p id="post-link" class="post-link"></p>
+                <button id="btn-restart" class="btn btn-primary btn-full">
+                    📸 Nouvelle publication
+                </button>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
